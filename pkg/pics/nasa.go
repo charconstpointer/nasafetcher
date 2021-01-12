@@ -105,7 +105,6 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 		j := job
 		g.Go(func() error {
 			b, err := n.c.Get(j)
-			log.Println(j)
 			if err != nil {
 				log.Println(err.Error())
 				return err
@@ -131,7 +130,7 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 
 func (n *NASAFetcher) GetImages(start time.Time, end time.Time, filters ...Filter) (*FetchResult, error) {
 	jobs, err := n.getJobs(start, end, filters...)
-	log.Println(jobs)
+
 	if err != nil {
 		return nil, err
 	}

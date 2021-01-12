@@ -3,7 +3,6 @@ package pics
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -35,9 +34,9 @@ func (c *NASAClient) Get(url string) ([]byte, error) {
 	defer c.returnToken()
 	select {
 	case <-c.tokens:
-		log.Println("getting",url)
+
 		res, err := http.Get(url)
-		if res != nil && res.StatusCode == http.StatusTooManyRequests{
+		if res != nil && res.StatusCode == http.StatusTooManyRequests {
 			return nil, &TooManyRequests{}
 		}
 		if err != nil {
