@@ -40,7 +40,7 @@ func (e *TooManyRequests) Error() string {
 	return fmt.Sprintf("too many requests")
 }
 
-func NewNASAFetcher(nasaClient client) *NASAFetcher {
+func NewNASAFetcher(apiKey string, nasaClient client) *NASAFetcher {
 	var c client
 	if nasaClient == nil {
 		c = NewNASAClient(5, time.Second)
@@ -49,7 +49,7 @@ func NewNASAFetcher(nasaClient client) *NASAFetcher {
 	}
 
 	fetcher := NASAFetcher{
-		apiKey: "DEMO_KEY",
+		apiKey: apiKey,
 		api:    "https://api.nasa.gov/planetary/apod",
 		c:      c,
 	}
@@ -95,17 +95,17 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImage, error) {
 	images := make([]*NASAImage, 0)
 
-	g, err := errgroup.WithContext(ctx)
+	g, err := errgroup.WithContext(context.Background())
 
 	if err != nil {
 		// return nil, err
 	}
 	mutex := sync.Mutex{}
 	for _, job := range jobs {
-
+		j := job
 		g.Go(func() error {
-			b, err := n.c.Get(job)
-
+			b, err := n.c.Get(j)
+			log.Println(j)
 			if err != nil {
 				log.Println(err.Error())
 				return err
@@ -131,6 +131,7 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 
 func (n *NASAFetcher) GetImages(start time.Time, end time.Time, filters ...Filter) (*FetchResult, error) {
 	jobs, err := n.getJobs(start, end, filters...)
+	log.Println(jobs)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package pics
 import (
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -27,19 +28,22 @@ func NewNASAClient(maxConc int, timeout time.Duration) *NASAClient {
 
 	return &c
 }
-
+func (c *NASAClient) returnToken() {
+	c.tokens <- struct{}{}
+}
 func (c *NASAClient) Get(url string) ([]byte, error) {
+	defer c.returnToken()
 	select {
 	case <-c.tokens:
+		log.Println("getting",url)
 		res, err := http.Get(url)
-
-		if res.StatusCode == http.StatusTooManyRequests {
-
+		if res != nil && res.StatusCode == http.StatusTooManyRequests{
 			return nil, &TooManyRequests{}
 		}
 		if err != nil {
 			return nil, err
 		}
+
 		return ioutil.ReadAll(res.Body)
 	case <-time.After(c.timeout):
 		return nil, errors.New("concurrency limit reached, all go routines are busy, please retry later")

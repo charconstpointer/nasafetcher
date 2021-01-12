@@ -8,8 +8,9 @@ import (
 
 //TODO envs
 var (
-	port   = flag.Int("port", 8080, "http port")
-	conc   = flag.Int("conc", 5, "max concurrect go routines")
+	port   = pics.GetEnvInt("PORT", 8080)
+	conc   = pics.GetEnvInt("CONCURRENT_REQUESTS", 5)
+	key    = pics.GetEnvString("API_KEY", "DEMO_KEY")
 	layout = flag.String("layout", "2006-01-02", "date layout for time parsing")
 )
 
@@ -19,8 +20,9 @@ func main() {
 
 	cfg := pics.Config{
 		Layout: *layout,
-		Conc:   *conc,
-		Port:   *port,
+		Conc:   conc,
+		Port:   port,
+		APIKey: key,
 		Logger: pics.NewPicsLogger(),
 	}
 

@@ -19,12 +19,14 @@ type Config struct {
 	Layout string
 	Conc   int
 	Port   int
+	APIKey string
 	Logger Logger
 }
 
 func NewServer(config Config) *server {
+	f := NewNASAFetcher(config.APIKey, nil)
 	s := server{
-		fetcher:    NewNASAFetcher(nil),
+		fetcher:    f,
 		logger:     config.Logger,
 		port:       config.Port,
 		timeLayout: config.Layout,
