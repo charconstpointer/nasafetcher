@@ -3,9 +3,11 @@ package pics
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -23,11 +25,15 @@ type NASAImage struct {
 
 type NASAFetcher struct {
 	tokens chan struct{}
+	apiKey string
+	api    string
 }
 
 func NewNASAFetcher(concLimit int) *NASAFetcher {
 	fetcher := NASAFetcher{
 		tokens: make(chan struct{}, concLimit),
+		apiKey: "DEMO_KEY",
+		api:    "https://api.nasa.gov/planetary/apod",
 	}
 	for i := 0; i < concLimit; i++ {
 		fetcher.tokens <- struct{}{}
@@ -41,31 +47,40 @@ func getDays(start time.Time, end time.Time) ([]time.Time, error) {
 		return nil, errors.New("start time must be before end time")
 	}
 	days := make([]time.Time, 0)
-	for start.Before(end) {
+	for start.Before(end.Add(time.Hour * 24)) {
 		days = append(days, start)
 		start = start.Add(time.Hour * 24)
 	}
 	return days, nil
 }
 
-func getJobs(start time.Time, end time.Time) ([]string, error) {
+func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...string) ([]string, error) {
 	if start.After(end) {
 		return nil, errors.New("start time must be before end time")
 	}
 	jobs := make([]string, 0)
 	for start.Before(end) {
-		jobs = append(jobs, "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date="+start.Format("2006-01-02"))
+		sb := strings.Builder{}
+		sb.WriteString(fmt.Sprintf("%s?api_key=%s", n.api, n.apiKey))
+
+		for _, filter := range filters {
+			sb.WriteString(fmt.Sprintf("&%s", filter))
+		}
+		sb.WriteString(fmt.Sprintf("&date=%s", start.Format("2006-01-02")))
+		jobs = append(jobs, sb.String())
+		log.Println(sb.String())
 		start = start.Add(time.Hour * 24)
 	}
 	return jobs, nil
 }
 
 func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
-	log.Println(jobs)
+
 	queue := make(chan string, len(jobs))
 	for _, job := range jobs {
 		queue <- job
 	}
+
 	images := make([]*NASAImage, 0)
 	for len(images) < len(jobs) {
 		select {
@@ -93,7 +108,7 @@ func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
 }
 
 func (n *NASAFetcher) GetImages(start time.Time, end time.Time) (*FetchResult, error) {
-	jobs, err := getJobs(start, end)
+	jobs, err := n.getJobs(start, end)
 	if err != nil {
 		return nil, err
 	}

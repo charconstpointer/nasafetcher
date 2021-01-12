@@ -6,6 +6,7 @@ import (
 	"gitlab.com/charconstpointer/TWljaGFsIEdvZ29BcHBzIE5BU0E/pkg/pics"
 )
 
+//TODO envs
 var (
 	port   = flag.Int("port", 8080, "http port")
 	conc   = flag.Int("conc", 5, "max concurrect go routines")

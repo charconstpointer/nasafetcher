@@ -20,9 +20,9 @@ func NewPicsLogger() *picsLogger {
 	return &picsLogger{}
 }
 func (l *picsLogger) Info(args ...interface{}) {
-	log.Info(args)
+	log.Info(args...)
 }
 
 func (l *picsLogger) Infof(format string, args ...interface{}) {
-	log.Infof(format, args)
+	log.Infof(format, args...)
 }
