@@ -18,7 +18,11 @@ func TestGetJobsCount(t *testing.T) {
 		{start: "2010-01-01", end: "2010-01-10", layout: "2006-01-02", want: 10},
 		{start: "2010-01-01", end: "2010-01-01", layout: "2006-01-02", want: 1},
 	}
-	n := NewNASAFetcher(nil, nil)
+	cfg := Config{
+		Conc:   10,
+		Logger: NewPicsLogger(),
+	}
+	n := NewNASAFetcher(&cfg, nil)
 	for _, tc := range tests {
 		start, _ := time.Parse("2006-01-02", tc.start)
 		end, _ := time.Parse("2006-01-02", tc.end)
@@ -38,7 +42,11 @@ func TestGetJobsError(t *testing.T) {
 	end := "2010-01-01"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
-	n := NewNASAFetcher(nil, nil)
+	cfg := Config{
+		Conc:   10,
+		Logger: NewPicsLogger(),
+	}
+	n := NewNASAFetcher(&cfg, nil)
 	d, err := n.getJobs(startDate, endDate)
 	if err == nil {
 		t.Errorf("Expected error to not be nil, because start date %s cannot be after end date %s", start, end)
@@ -89,17 +97,21 @@ func TestGetDaysError(t *testing.T) {
 }
 
 func TestBuildUrl(t *testing.T) {
-	f := NewNASAFetcher(nil, nil)
+	cfg := Config{
+		Conc:   10,
+		Logger: NewPicsLogger(),
+	}
+	n := NewNASAFetcher(&cfg, nil)
 	start := "2010-01-01"
 	end := "2010-01-03"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
 
-	url := f.buildUrl(startDate, endDate, Filter{
+	url := n.buildUrl(startDate, endDate, Filter{
 		key:   "copyright",
 		value: "Foo Bar-Baz",
 	})
-	expected := fmt.Sprintf("%s?api_key=%s&copyright=Foo Bar-Baz&date=%s", f.api, f.apiKey, start)
+	expected := fmt.Sprintf("%s?api_key=%s&copyright=Foo Bar-Baz&date=%s", n.api, n.apiKey, start)
 	if url != expected {
 		t.Errorf("Expected %s got %s", expected, url)
 	}
@@ -107,13 +119,17 @@ func TestBuildUrl(t *testing.T) {
 
 func TestGetImages(t *testing.T) {
 	c := NewMockClient(3, time.Second, time.Millisecond*10)
-	f := NewNASAFetcher(nil, c)
+	cfg := Config{
+		Conc:   10,
+		Logger: NewPicsLogger(),
+	}
+	n := NewNASAFetcher(&cfg, c)
 	start := "2010-01-01"
 	end := "2010-01-03"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
-	jobs, _ := f.getJobs(startDate, endDate)
-	imgs, err := f.GetImages(context.Background(), startDate, endDate)
+	jobs, _ := n.getJobs(startDate, endDate)
+	imgs, err := n.GetImages(context.Background(), startDate, endDate)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -133,13 +149,17 @@ func TestGetImages(t *testing.T) {
 
 func TestGetImagesInvalidRange(t *testing.T) {
 	c := NewMockClient(3, time.Second, time.Millisecond*10)
-	f := NewNASAFetcher(nil, c)
+	cfg := Config{
+		Conc:   10,
+		Logger: NewPicsLogger(),
+	}
+	n := NewNASAFetcher(&cfg, c)
 	start := "2010-01-04"
 	end := "2010-01-01"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
 
-	imgs, err := f.GetImages(context.Background(), startDate, endDate)
+	imgs, err := n.GetImages(context.Background(), startDate, endDate)
 	if err == nil {
 		t.Error("Expected error due to invalid range")
 	}
@@ -150,13 +170,17 @@ func TestGetImagesInvalidRange(t *testing.T) {
 
 func TestGetImagesTimeout(t *testing.T) {
 	c := NewMockClient(3, time.Second, time.Millisecond*999)
-	f := NewNASAFetcher(nil, c)
+	cfg := Config{
+		Conc:   10,
+		Logger: NewPicsLogger(),
+	}
+	n := NewNASAFetcher(&cfg, c)
 	start := "2010-01-04"
 	end := "2010-01-10"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
 
-	imgs, err := f.GetImages(context.Background(), startDate, endDate)
+	imgs, err := n.GetImages(context.Background(), startDate, endDate)
 
 	if err == nil {
 		t.Error("expected error to not be nil when concurrency limit is reached")

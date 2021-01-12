@@ -26,7 +26,9 @@ func main() {
 		Logger: pics.NewPicsLogger(),
 	}
 
-	s := pics.NewServer(&cfg)
+	client := pics.NewNASAClient(&cfg)
+	fetcher := pics.NewNASAFetcher(&cfg, client)
+	s := pics.NewServer(&cfg, fetcher)
 
 	if err := s.Listen(); err != nil {
 		fmt.Printf("Server failed: %s\n", err)

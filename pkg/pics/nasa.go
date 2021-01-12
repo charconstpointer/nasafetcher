@@ -43,7 +43,7 @@ func (e *TooManyRequests) Error() string {
 func NewNASAFetcher(config *Config, nasaClient client) *NASAFetcher {
 	var c client
 	if nasaClient == nil {
-		c = NewNASAClient(5, time.Second)
+		c = NewNASAClient(config)
 	} else {
 		c = nasaClient
 	}

@@ -17,12 +17,12 @@ type NASAClient struct {
 	timeout time.Duration
 }
 
-func NewNASAClient(maxConc int, timeout time.Duration) *NASAClient {
+func NewNASAClient(config *Config) *NASAClient {
 	c := NASAClient{
-		tokens:  make(chan struct{}, maxConc),
-		timeout: timeout,
+		tokens:  make(chan struct{}, config.Conc),
+		timeout: config.Timeout,
 	}
-	for i := 0; i < maxConc; i++ {
+	for i := 0; i < config.Conc; i++ {
 		c.tokens <- struct{}{}
 	}
 
