@@ -32,7 +32,7 @@ type NASAFetcher struct {
 	c      client
 }
 
-func NewNASAFetcher(nasaClient *NASAClient) *NASAFetcher {
+func NewNASAFetcher(nasaClient client) *NASAFetcher {
 	var c client
 	if nasaClient == nil {
 		c = NewNASAClient(5, time.Second)
@@ -84,10 +84,9 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 	return jobs, nil
 }
 
-func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
+func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImage, error) {
 	images := make([]*NASAImage, 0)
-	log.Println(jobs)
-	ctx := context.Background()
+
 	g, err := errgroup.WithContext(ctx)
 
 	if err != nil {
@@ -95,7 +94,7 @@ func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
 	}
 	mutex := sync.Mutex{}
 	for _, job := range jobs {
-		log.Println(job)
+
 		g.Go(func() error {
 			b, err := n.c.Get(job)
 			if err != nil {
@@ -103,6 +102,7 @@ func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
 			}
 			var img NASAImage
 			err = json.Unmarshal(b, &img)
+			log.Println(string(b))
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func (n *NASAFetcher) GetImages(start time.Time, end time.Time, filters ...Filte
 	if err != nil {
 		return nil, err
 	}
-	imgs, err := n.getImages(jobs)
+	imgs, err := n.getImages(jobs, context.Background())
 	urls := make([]string, 0)
 	for _, i := range imgs {
 		urls = append(urls, i.Url)

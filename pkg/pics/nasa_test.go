@@ -89,8 +89,8 @@ func TestGetDaysError(t *testing.T) {
 
 func TestBuildUrl(t *testing.T) {
 	f := NewNASAFetcher(nil)
-	start := "2010-01-03"
-	end := "2010-01-01"
+	start := "2010-01-01"
+	end := "2010-01-03"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
 
@@ -105,5 +105,52 @@ func TestBuildUrl(t *testing.T) {
 }
 
 func TestGetImages(t *testing.T) {
+	c := NewMockClient(3, time.Second)
+	f := NewNASAFetcher(c)
+	start := "2010-01-01"
+	end := "2010-01-03"
+	startDate, _ := time.Parse("2006-01-02", start)
+	endDate, _ := time.Parse("2006-01-02", end)
+	jobs, _ := f.getJobs(startDate, endDate)
+	imgs, err := f.GetImages(startDate, endDate)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	// jobs, err := f.getJobs(startDate, endDate)
+	// if err != nil {
+	// 	t.Error(err.Error())
+	// }
+	// img, err := f.getImages(jobs, context.Background())
+	// if err != nil {
+	// 	t.Error(err.Error())
+	// }
 
+	if imgs == nil {
+		t.Error("with valid range provided, exected result to not be nil")
+	}
+
+	if imgs.Urls == nil {
+		t.Error("with valid range provided, exected urls to not be nil")
+	}
+
+	if len(imgs.Urls) != len(jobs) {
+		t.Errorf("Expected imgs count to be %d instead got %d", len(jobs), len(imgs.Urls))
+	}
+}
+
+func TestGetImagesInvalidRange(t *testing.T) {
+	c := NewMockClient(3, time.Second)
+	f := NewNASAFetcher(c)
+	start := "2010-01-04"
+	end := "2010-01-01"
+	startDate, _ := time.Parse("2006-01-02", start)
+	endDate, _ := time.Parse("2006-01-02", end)
+
+	imgs, err := f.GetImages(startDate, endDate)
+	if err == nil {
+		t.Error("Expected error due to invalid range")
+	}
+	if imgs != nil {
+		t.Error("Expected images to be nil, as there is nothing to be returned due to invalid range error")
+	}
 }
