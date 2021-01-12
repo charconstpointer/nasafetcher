@@ -1,19 +1,17 @@
 package main
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
 	"gitlab.com/charconstpointer/TWljaGFsIEdvZ29BcHBzIE5BU0E/pkg/pics"
 )
 
 func main() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	cfg := pics.Config{
+		Layout: "2006-01-02",
+		Conc:   5,
+		Port:   8080,
+		Logger: pics.NewPicsLogger(),
+	}
 
-	s := pics.NewFetchServer()
+	s := pics.NewServer(cfg)
 	s.Listen()
-
-	<-sigs
 }

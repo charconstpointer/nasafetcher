@@ -27,9 +27,9 @@ type NASAFetcher struct {
 
 func NewNASAFetcher(concLimit int) *NASAFetcher {
 	fetcher := NASAFetcher{
-		tokens: make(chan struct{}, 5),
+		tokens: make(chan struct{}, concLimit),
 	}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < concLimit; i++ {
 		fetcher.tokens <- struct{}{}
 	}
 
@@ -92,7 +92,7 @@ func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
 	return images, nil
 }
 
-func (n *NASAFetcher) GetImages(start time.Time, end time.Time, concLimit int) (*FetchResult, error) {
+func (n *NASAFetcher) GetImages(start time.Time, end time.Time) (*FetchResult, error) {
 	jobs, err := getJobs(start, end)
 	if err != nil {
 		return nil, err
