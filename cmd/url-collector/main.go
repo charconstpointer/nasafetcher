@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"gitlab.com/charconstpointer/TWljaGFsIEdvZ29BcHBzIE5BU0E/pkg/pics"
 )
 
-//TODO envs
 var (
 	port   = pics.GetEnvInt("PORT", 8080)
 	conc   = pics.GetEnvInt("CONCURRENT_REQUESTS", 5)
@@ -27,5 +27,8 @@ func main() {
 	}
 
 	s := pics.NewServer(cfg)
-	s.Listen()
+
+	if err := s.Listen(); err != nil {
+		fmt.Printf("Server failed: %s\n", err)
+	}
 }

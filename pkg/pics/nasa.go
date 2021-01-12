@@ -92,7 +92,7 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 	return jobs, nil
 }
 
-func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImage, error) {
+func (n *NASAFetcher) getImages(ctx context.Context, jobs []string) ([]*NASAImage, error) {
 	images := make([]*NASAImage, 0)
 
 	g, err := errgroup.WithContext(context.Background())
@@ -104,7 +104,7 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 	for _, job := range jobs {
 		j := job
 		g.Go(func() error {
-			b, err := n.c.Get(j)
+			b, err := n.c.Get(ctx, j)
 			if err != nil {
 				log.Println(err.Error())
 				return err
@@ -128,13 +128,13 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 	return images, nil
 }
 
-func (n *NASAFetcher) GetImages(start time.Time, end time.Time, filters ...Filter) (*FetchResult, error) {
+func (n *NASAFetcher) GetImages(ctx context.Context, start time.Time, end time.Time, filters ...Filter) (*FetchResult, error) {
 	jobs, err := n.getJobs(start, end, filters...)
 
 	if err != nil {
 		return nil, err
 	}
-	imgs, err := n.getImages(jobs, context.Background())
+	imgs, err := n.getImages(ctx, jobs)
 	if err != nil {
 		return nil, err
 	}

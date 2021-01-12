@@ -1,6 +1,7 @@
 package pics
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -51,7 +52,7 @@ func (s *server) handleGetPictures(w http.ResponseWriter, r *http.Request) {
 	startTime, err := time.Parse(s.timeLayout, start)
 	endTime, err := time.Parse(s.timeLayout, end)
 
-	img, err := s.fetcher.GetImages(startTime, endTime)
+	img, err := s.fetcher.GetImages(context.Background(), startTime, endTime)
 
 	if err != nil {
 		var res failure

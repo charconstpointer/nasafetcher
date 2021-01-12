@@ -1,6 +1,7 @@
 package pics
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -112,7 +113,7 @@ func TestGetImages(t *testing.T) {
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
 	jobs, _ := f.getJobs(startDate, endDate)
-	imgs, err := f.GetImages(startDate, endDate)
+	imgs, err := f.GetImages(context.Background(), startDate, endDate)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -138,7 +139,7 @@ func TestGetImagesInvalidRange(t *testing.T) {
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
 
-	imgs, err := f.GetImages(startDate, endDate)
+	imgs, err := f.GetImages(context.Background(), startDate, endDate)
 	if err == nil {
 		t.Error("Expected error due to invalid range")
 	}

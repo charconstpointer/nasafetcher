@@ -1,9 +1,12 @@
 package pics
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Fetcher interface {
-	GetImages(start time.Time, end time.Time, filters ...Filter) (*FetchResult, error)
+	GetImages(ctx context.Context, start time.Time, end time.Time, filters ...Filter) (*FetchResult, error)
 }
 type Filter struct {
 	key   string

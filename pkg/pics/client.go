@@ -1,6 +1,7 @@
 package pics
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -8,7 +9,7 @@ import (
 )
 
 type client interface {
-	Get(url string) ([]byte, error)
+	Get(ctx context.Context, url string) ([]byte, error)
 }
 
 type NASAClient struct {
@@ -30,12 +31,15 @@ func NewNASAClient(maxConc int, timeout time.Duration) *NASAClient {
 func (c *NASAClient) returnToken() {
 	c.tokens <- struct{}{}
 }
-func (c *NASAClient) Get(url string) ([]byte, error) {
+func (c *NASAClient) Get(ctx context.Context, url string) ([]byte, error) {
 	defer c.returnToken()
 	select {
 	case <-c.tokens:
-
-		res, err := http.Get(url)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		res, err := http.DefaultClient.Do(req)
 		if res != nil && res.StatusCode == http.StatusTooManyRequests {
 			return nil, &TooManyRequests{}
 		}
