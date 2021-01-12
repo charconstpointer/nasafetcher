@@ -32,6 +32,14 @@ type NASAFetcher struct {
 	c      client
 }
 
+type TooManyRequests struct {
+	Path string
+}
+
+func (e *TooManyRequests) Error() string {
+	return fmt.Sprintf("too many requests")
+}
+
 func NewNASAFetcher(nasaClient client) *NASAFetcher {
 	var c client
 	if nasaClient == nil {
@@ -97,12 +105,14 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 
 		g.Go(func() error {
 			b, err := n.c.Get(job)
+
 			if err != nil {
+				log.Println(err.Error())
 				return err
 			}
 			var img NASAImage
 			err = json.Unmarshal(b, &img)
-			log.Println(string(b))
+
 			if err != nil {
 				return err
 			}
@@ -112,8 +122,10 @@ func (n *NASAFetcher) getImages(jobs []string, ctx context.Context) ([]*NASAImag
 			return nil
 		})
 	}
-	g.Wait()
-
+	if err := g.Wait(); err != nil {
+		log.Println(err.Error())
+		return nil, err
+	}
 	return images, nil
 }
 
@@ -123,6 +135,9 @@ func (n *NASAFetcher) GetImages(start time.Time, end time.Time, filters ...Filte
 		return nil, err
 	}
 	imgs, err := n.getImages(jobs, context.Background())
+	if err != nil {
+		return nil, err
+	}
 	urls := make([]string, 0)
 	for _, i := range imgs {
 		urls = append(urls, i.Url)

@@ -3,7 +3,6 @@ package pics
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -32,8 +31,12 @@ func NewNASAClient(maxConc int, timeout time.Duration) *NASAClient {
 func (c *NASAClient) Get(url string) ([]byte, error) {
 	select {
 	case <-c.tokens:
-		log.Println("getting", url)
 		res, err := http.Get(url)
+
+		if res.StatusCode == http.StatusTooManyRequests {
+
+			return nil, &TooManyRequests{}
+		}
 		if err != nil {
 			return nil, err
 		}

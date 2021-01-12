@@ -33,6 +33,13 @@ func NewServer(config Config) *server {
 }
 
 func (s *server) handleGetPictures(w http.ResponseWriter, r *http.Request) {
+	type success struct {
+		Urls []string `json:"urls"`
+	}
+
+	type failure struct {
+		Error string `json:"error"`
+	}
 	if r.Method != http.MethodGet {
 		return
 	}
@@ -44,11 +51,35 @@ func (s *server) handleGetPictures(w http.ResponseWriter, r *http.Request) {
 
 	img, err := s.fetcher.GetImages(startTime, endTime)
 
-	b, err := json.Marshal(img)
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		var res failure
+		switch err.(type) {
+		case *TooManyRequests:
+			w.WriteHeader(http.StatusTooManyRequests)
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+		}
+		res = failure{
+			Error: err.Error(),
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(b)
 		return
 	}
+	res := success{
+		Urls: img.Urls,
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 	w.Write(b)
 }
 
