@@ -106,7 +106,7 @@ func TestBuildUrl(t *testing.T) {
 }
 
 func TestGetImages(t *testing.T) {
-	c := NewMockClient(3, time.Second)
+	c := NewMockClient(3, time.Second, time.Millisecond*10)
 	f := NewNASAFetcher(nil, c)
 	start := "2010-01-01"
 	end := "2010-01-03"
@@ -132,7 +132,7 @@ func TestGetImages(t *testing.T) {
 }
 
 func TestGetImagesInvalidRange(t *testing.T) {
-	c := NewMockClient(3, time.Second)
+	c := NewMockClient(3, time.Second, time.Millisecond*10)
 	f := NewNASAFetcher(nil, c)
 	start := "2010-01-04"
 	end := "2010-01-01"
@@ -145,5 +145,23 @@ func TestGetImagesInvalidRange(t *testing.T) {
 	}
 	if imgs != nil {
 		t.Error("Expected images to be nil, as there is nothing to be returned due to invalid range error")
+	}
+}
+
+func TestGetImagesTimeout(t *testing.T) {
+	c := NewMockClient(3, time.Second, time.Millisecond*999)
+	f := NewNASAFetcher(nil, c)
+	start := "2010-01-04"
+	end := "2010-01-10"
+	startDate, _ := time.Parse("2006-01-02", start)
+	endDate, _ := time.Parse("2006-01-02", end)
+
+	imgs, err := f.GetImages(context.Background(), startDate, endDate)
+
+	if err == nil {
+		t.Error("expected error to not be nil when concurrency limit is reached")
+	}
+	if imgs != nil {
+		t.Error("Expected images to be nil, as there is nothing to be returned due concurrency limit reached")
 	}
 }

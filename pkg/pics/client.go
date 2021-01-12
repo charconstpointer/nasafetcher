@@ -32,9 +32,9 @@ func (c *NASAClient) returnToken() {
 	c.tokens <- struct{}{}
 }
 func (c *NASAClient) Get(ctx context.Context, url string) ([]byte, error) {
-	defer c.returnToken()
 	select {
 	case <-c.tokens:
+		defer c.returnToken()
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return nil, err
