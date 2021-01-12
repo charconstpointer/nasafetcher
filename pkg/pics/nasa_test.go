@@ -18,7 +18,7 @@ func TestGetJobsCount(t *testing.T) {
 		{start: "2010-01-01", end: "2010-01-10", layout: "2006-01-02", want: 10},
 		{start: "2010-01-01", end: "2010-01-01", layout: "2006-01-02", want: 1},
 	}
-	n := NewNASAFetcher("", nil)
+	n := NewNASAFetcher(nil, nil)
 	for _, tc := range tests {
 		start, _ := time.Parse("2006-01-02", tc.start)
 		end, _ := time.Parse("2006-01-02", tc.end)
@@ -38,7 +38,7 @@ func TestGetJobsError(t *testing.T) {
 	end := "2010-01-01"
 	startDate, _ := time.Parse("2006-01-02", start)
 	endDate, _ := time.Parse("2006-01-02", end)
-	n := NewNASAFetcher("", nil)
+	n := NewNASAFetcher(nil, nil)
 	d, err := n.getJobs(startDate, endDate)
 	if err == nil {
 		t.Errorf("Expected error to not be nil, because start date %s cannot be after end date %s", start, end)
@@ -89,7 +89,7 @@ func TestGetDaysError(t *testing.T) {
 }
 
 func TestBuildUrl(t *testing.T) {
-	f := NewNASAFetcher("", nil)
+	f := NewNASAFetcher(nil, nil)
 	start := "2010-01-01"
 	end := "2010-01-03"
 	startDate, _ := time.Parse("2006-01-02", start)
@@ -107,7 +107,7 @@ func TestBuildUrl(t *testing.T) {
 
 func TestGetImages(t *testing.T) {
 	c := NewMockClient(3, time.Second)
-	f := NewNASAFetcher("", c)
+	f := NewNASAFetcher(nil, c)
 	start := "2010-01-01"
 	end := "2010-01-03"
 	startDate, _ := time.Parse("2006-01-02", start)
@@ -133,7 +133,7 @@ func TestGetImages(t *testing.T) {
 
 func TestGetImagesInvalidRange(t *testing.T) {
 	c := NewMockClient(3, time.Second)
-	f := NewNASAFetcher("", c)
+	f := NewNASAFetcher(nil, c)
 	start := "2010-01-04"
 	end := "2010-01-01"
 	startDate, _ := time.Parse("2006-01-02", start)

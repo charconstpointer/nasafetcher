@@ -24,8 +24,17 @@ type Config struct {
 	Logger Logger
 }
 
-func NewServer(config Config) *server {
-	f := NewNASAFetcher(config.APIKey, nil)
+func newDefaultConfig() *Config {
+	return &Config{
+		APIKey: "DEMO_KEY",
+		Logger: NewPicsLogger(),
+		Conc:   5,
+		Port:   8080,
+	}
+}
+
+func NewServer(config *Config) *server {
+	f := NewNASAFetcher(config, nil)
 	s := server{
 		fetcher:    f,
 		logger:     config.Logger,

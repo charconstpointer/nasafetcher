@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +29,7 @@ type NASAFetcher struct {
 	apiKey string
 	api    string
 	c      client
+	logger Logger
 }
 
 type TooManyRequests struct {
@@ -40,18 +40,21 @@ func (e *TooManyRequests) Error() string {
 	return fmt.Sprintf("too many requests")
 }
 
-func NewNASAFetcher(apiKey string, nasaClient client) *NASAFetcher {
+func NewNASAFetcher(config *Config, nasaClient client) *NASAFetcher {
 	var c client
 	if nasaClient == nil {
 		c = NewNASAClient(5, time.Second)
 	} else {
 		c = nasaClient
 	}
-
+	if config == nil {
+		config = newDefaultConfig()
+	}
 	fetcher := NASAFetcher{
-		apiKey: apiKey,
+		apiKey: config.APIKey,
 		api:    "https://api.nasa.gov/planetary/apod",
 		c:      c,
+		logger: config.Logger,
 	}
 
 	return &fetcher
@@ -106,7 +109,7 @@ func (n *NASAFetcher) getImages(ctx context.Context, jobs []string) ([]*NASAImag
 		g.Go(func() error {
 			b, err := n.c.Get(ctx, j)
 			if err != nil {
-				log.Println(err.Error())
+				n.logger.Info(err.Error())
 				return err
 			}
 			var img NASAImage
@@ -122,7 +125,7 @@ func (n *NASAFetcher) getImages(ctx context.Context, jobs []string) ([]*NASAImag
 		})
 	}
 	if err := g.Wait(); err != nil {
-		log.Println(err.Error())
+		n.logger.Info(err.Error())
 		return nil, err
 	}
 	return images, nil

@@ -26,7 +26,7 @@ func main() {
 		Logger: pics.NewPicsLogger(),
 	}
 
-	s := pics.NewServer(cfg)
+	s := pics.NewServer(&cfg)
 
 	if err := s.Listen(); err != nil {
 		fmt.Printf("Server failed: %s\n", err)
