@@ -60,17 +60,6 @@ func NewNASAFetcher(config *Config, nasaClient client) *NASAFetcher {
 	return &fetcher
 }
 
-func getDays(start time.Time, end time.Time) ([]time.Time, error) {
-	if start.After(end) {
-		return nil, errors.New("start time must be before end time")
-	}
-	days := make([]time.Time, 0)
-	for start.Before(end.Add(time.Hour * 24)) {
-		days = append(days, start)
-		start = start.Add(time.Hour * 24)
-	}
-	return days, nil
-}
 func (n *NASAFetcher) buildUrl(start time.Time, end time.Time, filters ...Filter) string {
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s?api_key=%s", n.api, n.apiKey))
