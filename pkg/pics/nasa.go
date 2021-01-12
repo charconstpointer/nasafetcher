@@ -1,14 +1,16 @@
 package pics
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 //NASAImage is a single image response from api.nasa.gov
@@ -27,16 +29,21 @@ type NASAFetcher struct {
 	tokens chan struct{}
 	apiKey string
 	api    string
+	c      client
 }
 
-func NewNASAFetcher(concLimit int) *NASAFetcher {
+func NewNASAFetcher(nasaClient *NASAClient) *NASAFetcher {
+	var c client
+	if nasaClient == nil {
+		c = NewNASAClient(5, time.Second)
+	} else {
+		c = nasaClient
+	}
+
 	fetcher := NASAFetcher{
-		tokens: make(chan struct{}, concLimit),
 		apiKey: "DEMO_KEY",
 		api:    "https://api.nasa.gov/planetary/apod",
-	}
-	for i := 0; i < concLimit; i++ {
-		fetcher.tokens <- struct{}{}
+		c:      c,
 	}
 
 	return &fetcher
@@ -69,7 +76,7 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 		return nil, errors.New("start time must be before end time")
 	}
 	jobs := make([]string, 0)
-	for start.Before(end) {
+	for start.Before(end.Add(time.Hour * 24)) {
 		url := n.buildUrl(start, end, filters...)
 		jobs = append(jobs, url)
 		start = start.Add(time.Hour * 24)
@@ -78,34 +85,34 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 }
 
 func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
-
-	queue := make(chan string, len(jobs))
-	for _, job := range jobs {
-		queue <- job
-	}
-
 	images := make([]*NASAImage, 0)
-	for len(images) < len(jobs) {
-		select {
-		case _ = <-n.tokens:
-			job := <-queue
-			res, err := http.Get(job)
+	log.Println(jobs)
+	ctx := context.Background()
+	g, err := errgroup.WithContext(ctx)
+
+	if err != nil {
+		// return nil, err
+	}
+	mutex := sync.Mutex{}
+	for _, job := range jobs {
+		log.Println(job)
+		g.Go(func() error {
+			b, err := n.c.Get(job)
 			if err != nil {
-				log.Println(err.Error())
+				return err
 			}
 			var img NASAImage
-			b, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				return nil, err
-			}
 			err = json.Unmarshal(b, &img)
 			if err != nil {
-				return nil, err
+				return err
 			}
+			mutex.Lock()
 			images = append(images, &img)
-			n.tokens <- struct{}{}
-		}
+			mutex.Unlock()
+			return nil
+		})
 	}
+	g.Wait()
 
 	return images, nil
 }

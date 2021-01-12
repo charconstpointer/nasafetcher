@@ -24,7 +24,7 @@ type Config struct {
 
 func NewServer(config Config) *server {
 	s := server{
-		fetcher:    NewNASAFetcher(config.Conc),
+		fetcher:    NewNASAFetcher(nil),
 		logger:     config.Logger,
 		port:       config.Port,
 		timeLayout: config.Layout,
