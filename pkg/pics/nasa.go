@@ -53,22 +53,25 @@ func getDays(start time.Time, end time.Time) ([]time.Time, error) {
 	}
 	return days, nil
 }
+func (n *NASAFetcher) buildUrl(start time.Time, end time.Time, filters ...Filter) string {
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s?api_key=%s", n.api, n.apiKey))
 
-func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...string) ([]string, error) {
+	for _, filter := range filters {
+		sb.WriteString(fmt.Sprintf("&%s=%s", filter.key, filter.value))
+	}
+	sb.WriteString(fmt.Sprintf("&date=%s", start.Format("2006-01-02")))
+	return sb.String()
+}
+
+func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter) ([]string, error) {
 	if start.After(end) {
 		return nil, errors.New("start time must be before end time")
 	}
 	jobs := make([]string, 0)
 	for start.Before(end) {
-		sb := strings.Builder{}
-		sb.WriteString(fmt.Sprintf("%s?api_key=%s", n.api, n.apiKey))
-
-		for _, filter := range filters {
-			sb.WriteString(fmt.Sprintf("&%s", filter))
-		}
-		sb.WriteString(fmt.Sprintf("&date=%s", start.Format("2006-01-02")))
-		jobs = append(jobs, sb.String())
-		log.Println(sb.String())
+		url := n.buildUrl(start, end, filters...)
+		jobs = append(jobs, url)
 		start = start.Add(time.Hour * 24)
 	}
 	return jobs, nil
@@ -107,8 +110,8 @@ func (n *NASAFetcher) getImages(jobs []string) ([]*NASAImage, error) {
 	return images, nil
 }
 
-func (n *NASAFetcher) GetImages(start time.Time, end time.Time) (*FetchResult, error) {
-	jobs, err := n.getJobs(start, end)
+func (n *NASAFetcher) GetImages(start time.Time, end time.Time, filters ...Filter) (*FetchResult, error) {
+	jobs, err := n.getJobs(start, end, filters...)
 	if err != nil {
 		return nil, err
 	}

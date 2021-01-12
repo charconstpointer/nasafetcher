@@ -1,6 +1,7 @@
 package pics
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -42,5 +43,22 @@ func TestGetDaysError(t *testing.T) {
 
 	if d != nil {
 		t.Errorf("Expected days to be nil as there are not valid days withing provided range of dates")
+	}
+}
+
+func TestBuildUrl(t *testing.T) {
+	f := NewNASAFetcher(10)
+	start := "2010-01-03"
+	end := "2010-01-01"
+	startDate, _ := time.Parse("2006-01-02", start)
+	endDate, _ := time.Parse("2006-01-02", end)
+
+	url := f.buildUrl(startDate, endDate, Filter{
+		key:   "copyright",
+		value: "Foo Bar-Baz",
+	})
+	expected := fmt.Sprintf("%s?api_key=%s&copyright=Foo Bar-Baz&date=%s", f.api, f.apiKey, start)
+	if url != expected {
+		t.Errorf("Expected %s got %s", expected, url)
 	}
 }
