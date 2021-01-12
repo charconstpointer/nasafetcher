@@ -46,7 +46,7 @@ func NewServer(config *Config, fetcher Fetcher) *server {
 	return &s
 }
 
-func (s *server) handleGetPictures(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleGetPictures() func(w http.ResponseWriter, r *http.Request) {
 	type success struct {
 		Urls []string `json:"urls"`
 	}
@@ -54,51 +54,54 @@ func (s *server) handleGetPictures(w http.ResponseWriter, r *http.Request) {
 	type failure struct {
 		Error string `json:"error"`
 	}
-	if r.Method != http.MethodGet {
-		return
-	}
-	start := r.URL.Query().Get("start_time")
-	end := r.URL.Query().Get("end_time")
-
-	startTime, err := time.Parse(s.timeLayout, start)
-	endTime, err := time.Parse(s.timeLayout, end)
-
-	img, err := s.fetcher.GetImages(context.Background(), startTime, endTime)
-
-	if err != nil {
-		var res failure
-		switch err.(type) {
-		case *TooManyRequests:
-			w.WriteHeader(http.StatusTooManyRequests)
-		default:
-			w.WriteHeader(http.StatusBadRequest)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			return
 		}
-		res = failure{
-			Error: err.Error(),
+		start := r.URL.Query().Get("start_time")
+		end := r.URL.Query().Get("end_time")
+
+		startTime, err := time.Parse(s.timeLayout, start)
+		endTime, err := time.Parse(s.timeLayout, end)
+
+		img, err := s.fetcher.GetImages(context.Background(), startTime, endTime)
+
+		if err != nil {
+			var res failure
+			switch err.(type) {
+			case *TooManyRequests:
+				w.WriteHeader(http.StatusTooManyRequests)
+			default:
+				w.WriteHeader(http.StatusBadRequest)
+			}
+			res = failure{
+				Error: err.Error(),
+			}
+			b, err := json.Marshal(res)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			w.Write(b)
+			return
+		}
+		res := success{
+			Urls: img.Urls,
 		}
 		b, err := json.Marshal(res)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
+		w.WriteHeader(http.StatusOK)
 		w.Write(b)
-		return
 	}
-	res := success{
-		Urls: img.Urls,
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(b)
+
 }
 
 func (s *server) Listen() error {
-	http.HandleFunc("/pictures", s.withLogging(s.handleGetPictures))
+	http.HandleFunc("/pictures", s.withLogging(s.handleGetPictures()))
 	s.logger.Infof("Server started listening on port %d", s.port)
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil)
 }

@@ -2,7 +2,6 @@ package pics
 
 import (
 	"context"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -48,7 +47,5 @@ func (c *NASAClient) Get(ctx context.Context, url string) ([]byte, error) {
 		}
 
 		return ioutil.ReadAll(res.Body)
-	case <-time.After(c.timeout):
-		return nil, errors.New("concurrency limit reached, all go routines are busy, please retry later")
 	}
 }
