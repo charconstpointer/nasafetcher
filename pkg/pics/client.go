@@ -7,10 +7,12 @@ import (
 	"time"
 )
 
+//client represents http client
 type client interface {
 	Get(ctx context.Context, url string) ([]byte, error)
 }
 
+//NASAClient is a implementation of Client with additional support for concurrency control
 type NASAClient struct {
 	tokens  chan struct{}
 	timeout time.Duration

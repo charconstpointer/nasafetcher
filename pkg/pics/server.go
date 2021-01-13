@@ -16,25 +16,6 @@ type server struct {
 	logger     Logger
 }
 
-type Config struct {
-	Layout  string
-	Conc    int
-	Port    int
-	APIKey  string
-	Logger  Logger
-	Timeout time.Duration
-}
-
-func newDefaultConfig() *Config {
-	return &Config{
-		APIKey:  "DEMO_KEY",
-		Logger:  NewPicsLogger(),
-		Conc:    5,
-		Port:    8080,
-		Timeout: time.Second,
-	}
-}
-
 func NewServer(config *Config, fetcher Fetcher) *server {
 	f := fetcher
 	s := server{
@@ -46,7 +27,7 @@ func NewServer(config *Config, fetcher Fetcher) *server {
 	return &s
 }
 
-func (s *server) handleGetPictures() func(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleGetPictures() http.HandlerFunc {
 	type success struct {
 		Urls []string `json:"urls"`
 	}
@@ -54,6 +35,7 @@ func (s *server) handleGetPictures() func(w http.ResponseWriter, r *http.Request
 	type failure struct {
 		Error string `json:"error"`
 	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			return
@@ -64,40 +46,51 @@ func (s *server) handleGetPictures() func(w http.ResponseWriter, r *http.Request
 		startTime, err := time.Parse(s.timeLayout, start)
 		endTime, err := time.Parse(s.timeLayout, end)
 
+		if err != nil {
+			res := failure{
+				Error: "cannot parse provide dates, please make sure they're in correct format",
+			}
+			s.respond(w, res, http.StatusBadRequest)
+			return
+		}
 		img, err := s.fetcher.GetImages(context.Background(), startTime, endTime)
 
 		if err != nil {
-			var res failure
+			statusCode := http.StatusBadRequest
 			switch err.(type) {
 			case *TooManyRequests:
-				w.WriteHeader(http.StatusTooManyRequests)
-			default:
-				w.WriteHeader(http.StatusBadRequest)
-			}
-			res = failure{
-				Error: err.Error(),
-			}
-			b, err := json.Marshal(res)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				statusCode = http.StatusTooManyRequests
+				res := failure{
+					Error: err.Error(),
+				}
+				s.respond(w, res, statusCode)
 				return
 			}
-
-			w.Write(b)
-			return
+		}
+		if img == nil {
+			res := failure{
+				Error: "could not find any images for provided range of dates",
+			}
+			s.respond(w, res, http.StatusNotFound)
 		}
 		res := success{
 			Urls: img.Urls,
 		}
-		b, err := json.Marshal(res)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write(b)
+		s.respond(w, res, http.StatusOK)
 	}
+}
 
+func (s *server) respond(w http.ResponseWriter, data interface{}, code int) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(code)
+	_, err = w.Write(b)
+	if err != nil {
+		s.logger.Info(err.Error())
+	}
 }
 
 func (s *server) Listen() error {
