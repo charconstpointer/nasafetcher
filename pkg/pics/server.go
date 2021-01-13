@@ -70,7 +70,7 @@ func (s *server) handleGetPictures() http.HandlerFunc {
 			case *TooManyRequests:
 				statusCode = http.StatusTooManyRequests
 			default:
-				statusCode = http.StatusTooManyRequests
+				statusCode = http.StatusBadRequest
 			}
 			res := failure{
 				Error: err.Error(),
