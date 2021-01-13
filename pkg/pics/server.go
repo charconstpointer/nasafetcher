@@ -46,6 +46,10 @@ func (s *server) handleGetPictures() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+
 		if r.Method != http.MethodGet {
 			return
 		}
@@ -62,7 +66,8 @@ func (s *server) handleGetPictures() http.HandlerFunc {
 			s.respond(w, res, http.StatusBadRequest)
 			return
 		}
-		img, err := s.fetcher.GetImages(context.Background(), startTime, endTime)
+
+		img, err := s.fetcher.GetImages(ctx, startTime, endTime)
 
 		if err != nil {
 			statusCode := http.StatusBadRequest

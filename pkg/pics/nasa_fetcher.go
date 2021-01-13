@@ -83,6 +83,7 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 
 	jobs := make([]string, 0)
 	for start.Before(end.Add(time.Hour * 24)) {
+		//this is not tested as i would need to mock time.Time and im runnig out of time :(
 		if start.After(time.Now()) {
 			n.logger.Info("trimming dates from the future")
 			return jobs, nil
