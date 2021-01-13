@@ -42,14 +42,16 @@ func (e *TooManyRequests) Error() string {
 
 func NewNASAFetcher(config *Config, nasaClient client) *NASAFetcher {
 	var c client
+	if config == nil {
+		config = newDefaultConfig()
+	}
+
 	if nasaClient == nil {
 		c = NewNASAClient(config)
 	} else {
 		c = nasaClient
 	}
-	if config == nil {
-		config = newDefaultConfig()
-	}
+
 	fetcher := NASAFetcher{
 		apiKey: config.APIKey,
 		api:    "https://api.nasa.gov/planetary/apod",

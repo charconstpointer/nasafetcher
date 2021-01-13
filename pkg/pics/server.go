@@ -9,11 +9,12 @@ import (
 
 type server struct {
 	timeLayout string
-	port       int
 	mux        *http.ServeMux
 	fetcher    Fetcher
 	tokens     chan struct{}
 	logger     Logger
+
+	timeout time.Duration
 }
 
 func NewServer(config *Config, fetcher Fetcher) *server {
@@ -21,8 +22,8 @@ func NewServer(config *Config, fetcher Fetcher) *server {
 		mux:        http.NewServeMux(),
 		fetcher:    fetcher,
 		logger:     config.Logger,
-		port:       config.Port,
 		timeLayout: config.Layout,
+		timeout:    time.Second * 5,
 	}
 	s.routes()
 	return &s
@@ -47,7 +48,7 @@ func (s *server) handleGetPictures() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		ctx, cancel := context.WithTimeout(ctx, s.timeout)
 		defer cancel()
 
 		if r.Method != http.MethodGet {
@@ -97,6 +98,7 @@ func (s *server) handleGetPictures() http.HandlerFunc {
 }
 
 func (s *server) respond(w http.ResponseWriter, data interface{}, code int) {
+	w.Header().Set("Content-Type", "application/json")
 	b, err := json.Marshal(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
