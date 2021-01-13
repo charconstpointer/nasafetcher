@@ -103,8 +103,6 @@ func (n *NASAFetcher) execJobs(ctx context.Context, jobs []string) ([]*NASAImage
 	resCh := make(chan *NASAImage, len(jobs))
 	images := make([]*NASAImage, 0)
 	g, _ := errgroup.WithContext(ctx)
-	//could replace it with a result channel and collect it after execution
-	// mutex := sync.Mutex{}
 
 	for _, job := range jobs {
 		j := job
@@ -121,10 +119,6 @@ func (n *NASAFetcher) execJobs(ctx context.Context, jobs []string) ([]*NASAImage
 				return err
 			}
 			resCh <- &img
-
-			// mutex.Lock()
-			// images = append(images, &img)
-			// mutex.Unlock()
 			return nil
 		})
 	}

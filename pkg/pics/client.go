@@ -13,6 +13,7 @@ type client interface {
 }
 
 //NASAClient is a implementation of client with additional support for concurrency control using semaphore like channel solution
+
 type NASAClient struct {
 	tokens  chan struct{}
 	timeout time.Duration
@@ -32,6 +33,8 @@ func NewNASAClient(config *Config) *NASAClient {
 func (c *NASAClient) returnToken() {
 	c.tokens <- struct{}{}
 }
+
+//We probably should depend on http.Client instead of using a default one
 func (c *NASAClient) Get(ctx context.Context, url string) ([]byte, error) {
 	select {
 	case <-c.tokens:
@@ -40,6 +43,7 @@ func (c *NASAClient) Get(ctx context.Context, url string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		//We probably should depend on http.Client in *NASAClient instead of using a default one
 		res, err := http.DefaultClient.Do(req)
 		if res != nil && res.StatusCode == http.StatusTooManyRequests {
 			return nil, &TooManyRequests{}
