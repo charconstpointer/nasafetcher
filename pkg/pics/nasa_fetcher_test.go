@@ -9,14 +9,16 @@ import (
 
 func TestGetJobsCount(t *testing.T) {
 	type test struct {
-		start  string
-		end    string
-		layout string
-		want   int
+		start   string
+		end     string
+		current string
+		layout  string
+		want    int
 	}
 	tests := []test{
-		{start: "2010-01-01", end: "2010-01-10", layout: "2006-01-02", want: 10},
-		{start: "2010-01-01", end: "2010-01-01", layout: "2006-01-02", want: 1},
+		{start: "2010-01-01", end: "2010-01-10", current: "2010-01-15", layout: "2006-01-02", want: 10},
+		{start: "2010-01-01", end: "2010-01-01", current: "2010-01-15", layout: "2006-01-02", want: 1},
+		{start: "2010-01-01", end: "2010-01-01", current: "2010-01-15", layout: "2006-01-02", want: 1},
 	}
 	cfg := Config{
 		Conc:   10,
@@ -26,6 +28,7 @@ func TestGetJobsCount(t *testing.T) {
 	for _, tc := range tests {
 		start, _ := time.Parse("2006-01-02", tc.start)
 		end, _ := time.Parse("2006-01-02", tc.end)
+
 		d, err := n.getJobs(start, end)
 		if err != nil {
 			t.Error(err.Error())

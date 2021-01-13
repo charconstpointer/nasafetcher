@@ -74,11 +74,19 @@ func (n *NASAFetcher) buildUrl(start time.Time, end time.Time, filters ...Filter
 }
 
 func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter) ([]string, error) {
+	if start.After(time.Now()) {
+		return nil, errors.New("star time cannot be in the past")
+	}
 	if start.After(end) {
 		return nil, errors.New("start time must be before end time")
 	}
+
 	jobs := make([]string, 0)
 	for start.Before(end.Add(time.Hour * 24)) {
+		if start.After(time.Now()) {
+			n.logger.Info("trimming dates from the future")
+			return jobs, nil
+		}
 		url := n.buildUrl(start, end, filters...)
 		jobs = append(jobs, url)
 		start = start.Add(time.Hour * 24)
