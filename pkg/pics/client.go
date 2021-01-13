@@ -12,7 +12,7 @@ type client interface {
 	Get(ctx context.Context, url string) ([]byte, error)
 }
 
-//NASAClient is a implementation of Client with additional support for concurrency control
+//NASAClient is a implementation of client with additional support for concurrency control using semaphore like channel solution
 type NASAClient struct {
 	tokens  chan struct{}
 	timeout time.Duration

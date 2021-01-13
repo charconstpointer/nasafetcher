@@ -8,11 +8,11 @@ import (
 )
 
 type server struct {
+	timeLayout string
+	port       int
 	mux        *http.ServeMux
 	fetcher    Fetcher
 	tokens     chan struct{}
-	timeLayout string
-	port       int
 	logger     Logger
 }
 

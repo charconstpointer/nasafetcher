@@ -60,11 +60,13 @@ func NewNASAFetcher(config *Config, nasaClient client) *NASAFetcher {
 	return &fetcher
 }
 
+//if you want additional filtering, like mentioned copyright Filter is the way to do it
 func (n *NASAFetcher) buildUrl(start time.Time, end time.Time, filters ...Filter) string {
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s?api_key=%s", n.api, n.apiKey))
 
 	for _, filter := range filters {
+		//knowing that api_key is always present we can simply apend our filters with '&'%s=%s
 		sb.WriteString(fmt.Sprintf("&%s=%s", filter.key, filter.value))
 	}
 	sb.WriteString(fmt.Sprintf("&date=%s", start.Format("2006-01-02")))
@@ -84,15 +86,12 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 	return jobs, nil
 }
 
-func (n *NASAFetcher) getImages(ctx context.Context, jobs []string) ([]*NASAImage, error) {
+func (n *NASAFetcher) execJobs(ctx context.Context, jobs []string) ([]*NASAImage, error) {
 	images := make([]*NASAImage, 0)
-
-	g, err := errgroup.WithContext(context.Background())
-
-	if err != nil {
-		// return nil, err
-	}
+	g, _ := errgroup.WithContext(context.Background())
+	//could replace it with a result channel and collect it after execution
 	mutex := sync.Mutex{}
+
 	for _, job := range jobs {
 		j := job
 		g.Go(func() error {
@@ -107,6 +106,7 @@ func (n *NASAFetcher) getImages(ctx context.Context, jobs []string) ([]*NASAImag
 			if err != nil {
 				return err
 			}
+
 			mutex.Lock()
 			images = append(images, &img)
 			mutex.Unlock()
@@ -117,16 +117,18 @@ func (n *NASAFetcher) getImages(ctx context.Context, jobs []string) ([]*NASAImag
 		n.logger.Info(err.Error())
 		return nil, err
 	}
+
 	return images, nil
 }
 
 func (n *NASAFetcher) GetImages(ctx context.Context, start time.Time, end time.Time, filters ...Filter) (*FetchResult, error) {
+	//jobs are atomic api calls, given 3 day date range, each job represents single day
 	jobs, err := n.getJobs(start, end, filters...)
-
 	if err != nil {
 		return nil, err
 	}
-	imgs, err := n.getImages(ctx, jobs)
+
+	imgs, err := n.execJobs(ctx, jobs)
 	if err != nil {
 		return nil, err
 	}

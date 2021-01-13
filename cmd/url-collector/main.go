@@ -29,11 +29,11 @@ func main() {
 
 	client := pics.NewNASAClient(&cfg)
 	fetcher := pics.NewNASAFetcher(&cfg, client)
-	s := pics.NewServer(&cfg, fetcher)
+	server := pics.NewServer(&cfg, fetcher)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
-	if err := http.ListenAndServe(addr, s); err != nil {
+	if err := http.ListenAndServe(addr, server); err != nil {
 		fmt.Printf("Server failed: %s\n", err)
 	}
 }
