@@ -145,7 +145,10 @@ func (n *NASAFetcher) GetImages(ctx context.Context, start time.Time, end time.T
 	}
 	urls := make([]string, 0)
 	for _, i := range imgs {
-		urls = append(urls, i.Url)
+		if i.Hdurl == "" {
+			continue
+		}
+		urls = append(urls, i.Hdurl)
 	}
 	return &FetchResult{Urls: urls}, nil
 }
