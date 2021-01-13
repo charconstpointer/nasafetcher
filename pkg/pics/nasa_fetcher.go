@@ -14,14 +14,14 @@ import (
 
 //NASAImage is a single image response from api.nasa.gov
 type NASAImage struct {
-	Copyright       string `json:"copyright"`
-	Date            string `json:"date"`
-	Explanation     string `json:"explanation"`
-	Hdurl           string `json:"hdurl"`
-	Media_type      string `json:"media_type"`
-	Service_version string `json:"service_version"`
-	Title           string `json:"title"`
-	Url             string `json:"url"`
+	Copyright      string `json:"copyright"`
+	Date           string `json:"date"`
+	Explanation    string `json:"explanation"`
+	Hdurl          string `json:"hdurl"`
+	MediaType      string `json:"media_type"`
+	ServiceVersion string `json:"service_version"`
+	Title          string `json:"title"`
+	Url            string `json:"url"`
 }
 
 type NASAFetcher struct {
