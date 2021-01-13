@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -84,6 +84,8 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 	}
 
 	jobs := make([]string, 0)
+	//add one day to end since we want to include last day of given range, this expression is a < b not a <= b
+	//we don't have to worry about anything but days since NASA strips hh-mm-ss
 	for start.Before(end.Add(time.Hour * 24)) {
 		//this is not tested as i would need to mock time.Time and im runnig out of time :(
 		if start.After(time.Now()) {
@@ -98,10 +100,11 @@ func (n *NASAFetcher) getJobs(start time.Time, end time.Time, filters ...Filter)
 }
 
 func (n *NASAFetcher) execJobs(ctx context.Context, jobs []string) ([]*NASAImage, error) {
+	resCh := make(chan *NASAImage, len(jobs))
 	images := make([]*NASAImage, 0)
-	g, _ := errgroup.WithContext(context.Background())
+	g, _ := errgroup.WithContext(ctx)
 	//could replace it with a result channel and collect it after execution
-	mutex := sync.Mutex{}
+	// mutex := sync.Mutex{}
 
 	for _, job := range jobs {
 		j := job
@@ -117,18 +120,24 @@ func (n *NASAFetcher) execJobs(ctx context.Context, jobs []string) ([]*NASAImage
 			if err != nil {
 				return err
 			}
+			resCh <- &img
 
-			mutex.Lock()
-			images = append(images, &img)
-			mutex.Unlock()
+			// mutex.Lock()
+			// images = append(images, &img)
+			// mutex.Unlock()
 			return nil
 		})
 	}
+
 	if err := g.Wait(); err != nil {
 		n.logger.Info(err.Error())
+		close(resCh)
 		return nil, err
 	}
-
+	close(resCh)
+	for img := range resCh {
+		images = append(images, img)
+	}
 	return images, nil
 }
 
