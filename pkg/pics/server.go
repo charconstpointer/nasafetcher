@@ -3,12 +3,12 @@ package pics
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 )
 
 type server struct {
+	mux        *http.ServeMux
 	fetcher    Fetcher
 	tokens     chan struct{}
 	timeLayout string
@@ -17,14 +17,23 @@ type server struct {
 }
 
 func NewServer(config *Config, fetcher Fetcher) *server {
-	f := fetcher
 	s := server{
-		fetcher:    f,
+		mux:        http.NewServeMux(),
+		fetcher:    fetcher,
 		logger:     config.Logger,
 		port:       config.Port,
 		timeLayout: config.Layout,
 	}
+	s.routes()
 	return &s
+}
+
+func (s *server) routes() {
+	s.mux.HandleFunc("/pictures", s.withLogging(s.handleGetPictures()))
+}
+
+func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
 }
 
 func (s *server) handleGetPictures() http.HandlerFunc {
@@ -60,12 +69,14 @@ func (s *server) handleGetPictures() http.HandlerFunc {
 			switch err.(type) {
 			case *TooManyRequests:
 				statusCode = http.StatusTooManyRequests
-				res := failure{
-					Error: err.Error(),
-				}
-				s.respond(w, res, statusCode)
-				return
+			default:
+				statusCode = http.StatusTooManyRequests
 			}
+			res := failure{
+				Error: err.Error(),
+			}
+			s.respond(w, res, statusCode)
+			return
 		}
 		if img == nil {
 			res := failure{
@@ -91,12 +102,6 @@ func (s *server) respond(w http.ResponseWriter, data interface{}, code int) {
 	if err != nil {
 		s.logger.Info(err.Error())
 	}
-}
-
-func (s *server) Listen() error {
-	http.HandleFunc("/pictures", s.withLogging(s.handleGetPictures()))
-	s.logger.Infof("Server started listening on port %d", s.port)
-	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil)
 }
 
 func (s *server) withLogging(h http.HandlerFunc) http.HandlerFunc {

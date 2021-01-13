@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 
 	"gitlab.com/charconstpointer/TWljaGFsIEdvZ29BcHBzIE5BU0E/pkg/pics"
 )
@@ -30,7 +31,9 @@ func main() {
 	fetcher := pics.NewNASAFetcher(&cfg, client)
 	s := pics.NewServer(&cfg, fetcher)
 
-	if err := s.Listen(); err != nil {
+	addr := fmt.Sprintf(":%d", cfg.Port)
+
+	if err := http.ListenAndServe(addr, s); err != nil {
 		fmt.Printf("Server failed: %s\n", err)
 	}
 }
